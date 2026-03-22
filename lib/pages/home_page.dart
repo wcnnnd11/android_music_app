@@ -25,11 +25,19 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final HomeController _controller;
+  late final AssetImage _launchImage;
 
   @override
   void initState() {
     super.initState();
     _controller = HomeController();
+    _launchImage = const AssetImage('assets/images/loading.jpg');
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await precacheImage(_launchImage, context);
+      if (!mounted) return;
+      await _controller.init();
+    });
   }
 
   @override
@@ -109,34 +117,74 @@ class _HomePageState extends State<HomePage> {
           extendBodyBehindAppBar: true,
           backgroundColor: Colors.transparent,
           appBar: HomeTopBar(onTapLogin: _showLoginSheet),
-          body: HomeBackground(
-            child: SafeArea(
-              bottom: false,
-              child: Column(
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const HomeSearchBar(),
-                          if (_controller.hasAnyAccount)
-                            const SizedBox(height: 24),
-                          MyPlaylistPanel(
-                            qqPlatform: _controller.qqPlatform,
-                            neteasePlatform: _controller.neteasePlatform,
-                            onTapPlatformAccountSwitcher:
-                                _showAccountSwitchSheet,
+          body: Stack(
+            children: [
+              /// 原本页面
+              HomeBackground(
+                child: SafeArea(
+                  bottom: false,
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const HomeSearchBar(),
+                              if (_controller.hasAnyAccount)
+                                const SizedBox(height: 24),
+                              MyPlaylistPanel(
+                                qqPlatform: _controller.qqPlatform,
+                                neteasePlatform: _controller.neteasePlatform,
+                                onTapPlatformAccountSwitcher:
+                                    _showAccountSwitchSheet,
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
+                      const MiniPlayer(),
+                    ],
+                  ),
+                ),
+              ),
+
+              /// ===== loading 覆盖层 =====
+              if (_controller.isInitializing)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black,
+                    alignment: Alignment.center,
+                    child: Image(image: _launchImage, fit: BoxFit.contain),
+                  ),
+                ),
+
+              /// App 内操作 loading
+              if (_controller.isOperating)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    alignment: Alignment.center,
+                    child: const CircularProgressIndicator(),
+                  ),
+                ),
+
+              /// ===== error 覆盖层 =====
+              if (_controller.errorMessage != null)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.8),
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      _controller.errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white),
                     ),
                   ),
-                  const MiniPlayer(),
-                ],
-              ),
-            ),
+                ),
+            ],
           ),
         );
       },
