@@ -61,6 +61,10 @@ class HomeController extends ChangeNotifier {
   Future<void> refreshAll() async {
     final qqAccounts = await _musicService.getAccounts('qq');
     final qqCurrent = await _musicService.getCurrentAccount('qq');
+    final qqPlaylists = await _musicService.getPlaylists('qq'); // ✅ 新增
+    qqPlatform.playlists
+      ..clear()
+      ..addAll(qqPlaylists);
 
     qqPlatform.accounts
       ..clear()
@@ -69,6 +73,10 @@ class HomeController extends ChangeNotifier {
 
     final neteaseAccounts = await _musicService.getAccounts('netease');
     final neteaseCurrent = await _musicService.getCurrentAccount('netease');
+    final neteasePlaylists = await _musicService.getPlaylists('netease');
+    neteasePlatform.playlists
+      ..clear()
+      ..addAll(neteasePlaylists);
 
     neteasePlatform.accounts
       ..clear()

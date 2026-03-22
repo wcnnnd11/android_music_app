@@ -4,10 +4,7 @@ import 'package:flutter/material.dart';
 class PlaylistSection extends StatelessWidget {
   final List<Map<String, String>> playlists;
 
-  const PlaylistSection({
-    super.key,
-    required this.playlists,
-  });
+  const PlaylistSection({super.key, required this.playlists});
 
   @override
   Widget build(BuildContext context) {
@@ -17,10 +14,7 @@ class PlaylistSection extends StatelessWidget {
         // 分区标题
         const Text(
           '我的歌单',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
 
         const SizedBox(height: 12),
@@ -57,7 +51,7 @@ class PlaylistSection extends StatelessWidget {
                         top: Radius.circular(18),
                       ),
                       child: Image.network(
-                        item['image'] ?? '',
+                        item['coverUrl'] ?? '',
                         height: 120,
                         width: double.infinity,
                         fit: BoxFit.cover,
@@ -84,7 +78,7 @@ class PlaylistSection extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            item['title'] ?? '',
+                            item['name'] ?? '',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -94,7 +88,7 @@ class PlaylistSection extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            item['count'] ?? '',
+                            (item['trackCount'] ?? '').toString(),
                             style: TextStyle(
                               fontSize: 13,
                               color: Colors.grey.shade600,

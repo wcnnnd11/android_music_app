@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/music_account.dart';
+import '../../models/playlist.dart';
 
 /// 通用平台歌单区域
 /// 作用：
@@ -10,12 +11,14 @@ import '../../models/music_account.dart';
 class MusicPlatformSection extends StatelessWidget {
   final String platformName;
   final MusicAccount currentAccount;
+  final List<Playlist> playlists;
   final VoidCallback onTapAccountSwitcher;
 
   const MusicPlatformSection({
     super.key,
     required this.platformName,
     required this.currentAccount,
+    required this.playlists, // ✅ 新增
     required this.onTapAccountSwitcher,
   });
 
@@ -79,7 +82,7 @@ class MusicPlatformSection extends StatelessWidget {
 
         /// 当前账号的歌单列表
         Column(
-          children: currentAccount.playlists
+          children: playlists
               .map(
                 (playlist) =>
                     _PlaylistCard(title: playlist.name, isDark: isDark),

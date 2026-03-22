@@ -48,6 +48,7 @@ class MyPlaylistPanel extends StatelessWidget {
           MusicPlatformSection(
             platformName: qqPlatform.platformName,
             currentAccount: qqCurrent,
+            playlists: qqPlatform.playlists, // ✅ 新增
             onTapAccountSwitcher: () =>
                 onTapPlatformAccountSwitcher(qqPlatform),
           ),
@@ -58,6 +59,7 @@ class MyPlaylistPanel extends StatelessWidget {
           MusicPlatformSection(
             platformName: neteasePlatform.platformName,
             currentAccount: neteaseCurrent,
+            playlists: qqPlatform.playlists, // ✅ 新增
             onTapAccountSwitcher: () =>
                 onTapPlatformAccountSwitcher(neteasePlatform),
           ),
