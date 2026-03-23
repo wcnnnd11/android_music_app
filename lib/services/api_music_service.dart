@@ -157,7 +157,9 @@ class ApiMusicService implements IMusicService {
 
     try {
       final url = Uri.parse('$baseUrl/accounts/$accountId');
-      final response = await http.get(url).timeout(const Duration(seconds: 5));
+      final response = await http
+          .delete(url)
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode != 200) {
         throw Exception('删除账号失败: ${response.statusCode}');

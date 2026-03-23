@@ -128,38 +128,69 @@ class AccountSwitchSheet extends StatelessWidget {
               : (isDark ? Colors.white10 : Colors.black12),
         ),
       ),
-      child: ListTile(
-        onTap: () => onSwitchAccount(account.id),
-        leading: CircleAvatar(
-          backgroundColor: isDark ? Colors.white10 : Colors.black12,
-          child: Text(
-            account.nickname.isNotEmpty ? account.nickname[0] : '?',
-            style: TextStyle(color: isDark ? Colors.white : Colors.black),
+      child: Row(
+        children: [
+          /// 👇 左侧点击区域（只负责切换）
+          Expanded(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => onSwitchAccount(account.id),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: isDark ? Colors.white10 : Colors.black12,
+                      child: Text(
+                        account.nickname.isNotEmpty ? account.nickname[0] : '?',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            account.nickname,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            isCurrent ? '当前账号' : '点击切换到该账号',
+                            style: TextStyle(
+                              color: isCurrent
+                                  ? Colors.greenAccent
+                                  : (isDark ? Colors.white60 : Colors.black54),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
-        title: Text(
-          account.nickname,
-          style: TextStyle(
-            color: isDark ? Colors.white : Colors.black,
-            fontWeight: FontWeight.w600,
+
+          /// 👇 删除按钮（独立区域，不会触发 onTap）
+          IconButton(
+            onPressed: () => onDeleteAccount(account.id),
+            icon: Icon(
+              Icons.delete_outline,
+              color: isDark ? Colors.white70 : Colors.black54,
+            ),
           ),
-        ),
-        subtitle: Text(
-          isCurrent ? '当前账号' : '点击切换到该账号',
-          style: TextStyle(
-            color: isCurrent
-                ? Colors.greenAccent
-                : (isDark ? Colors.white60 : Colors.black54),
-            fontSize: 13,
-          ),
-        ),
-        trailing: IconButton(
-          onPressed: () => onDeleteAccount(account.id),
-          icon: Icon(
-            Icons.delete_outline,
-            color: isDark ? Colors.white70 : Colors.black54,
-          ),
-        ),
+        ],
       ),
     );
   }
