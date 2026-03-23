@@ -15,6 +15,9 @@ class HomeController extends ChangeNotifier {
   static const Duration _minLaunchDuration = Duration(
     milliseconds: 3000,
   ); // 最短启动展示时间
+
+  static const Duration _startupTimeout = Duration(seconds: 5); // 启动阶段超时保护
+
   late final MusicPlatformState qqPlatform;
   late final MusicPlatformState neteasePlatform;
 
@@ -43,8 +46,8 @@ class HomeController extends ChangeNotifier {
       errorMessage = null;
       notifyListeners();
 
-      await _musicService.init();
-      await refreshAll(isInit: true);
+      await _musicService.init().timeout(_startupTimeout);
+      await refreshAll(isInit: true).timeout(_startupTimeout);
 
       final elapsed = DateTime.now().difference(startTime);
       final remaining = _minLaunchDuration - elapsed;
@@ -53,7 +56,8 @@ class HomeController extends ChangeNotifier {
         await Future.delayed(remaining); // 保证最短展示时间
       }
     } catch (e) {
-      errorMessage = e.toString();
+      errorMessage = '启动失败：$e';
+
       final elapsed = DateTime.now().difference(startTime);
       final remaining = _minLaunchDuration - elapsed;
       if (remaining > Duration.zero) {
@@ -86,9 +90,15 @@ class HomeController extends ChangeNotifier {
 
       errorMessage = null;
 
-      final qqAccounts = await _musicService.getAccounts('qq');
-      final qqCurrent = await _musicService.getCurrentAccount('qq');
-      final qqPlaylists = await _musicService.getPlaylists('qq');
+      final qqAccounts = await _musicService
+          .getAccounts('qq')
+          .timeout(_startupTimeout);
+      final qqCurrent = await _musicService
+          .getCurrentAccount('qq')
+          .timeout(_startupTimeout);
+      final qqPlaylists = await _musicService
+          .getPlaylists('qq')
+          .timeout(_startupTimeout);
 
       qqPlatform.playlists
         ..clear()
@@ -100,9 +110,15 @@ class HomeController extends ChangeNotifier {
 
       qqPlatform.currentAccountId = qqCurrent?.id;
 
-      final neteaseAccounts = await _musicService.getAccounts('netease');
-      final neteaseCurrent = await _musicService.getCurrentAccount('netease');
-      final neteasePlaylists = await _musicService.getPlaylists('netease');
+      final neteaseAccounts = await _musicService
+          .getAccounts('netease')
+          .timeout(_startupTimeout);
+      final neteaseCurrent = await _musicService
+          .getCurrentAccount('netease')
+          .timeout(_startupTimeout);
+      final neteasePlaylists = await _musicService
+          .getPlaylists('netease')
+          .timeout(_startupTimeout);
 
       neteasePlatform.playlists
         ..clear()
@@ -114,7 +130,7 @@ class HomeController extends ChangeNotifier {
 
       neteasePlatform.currentAccountId = neteaseCurrent?.id;
     } catch (e) {
-      errorMessage = e.toString();
+      errorMessage = '数据加载失败：$e';
     } finally {
       if (!isInit) {
         isOperating = false;

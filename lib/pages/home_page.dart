@@ -10,12 +10,6 @@ import '../widgets/home/login_platform_sheet.dart';
 import '../widgets/home/mini_player.dart';
 import '../widgets/home/my_playlist_panel.dart';
 
-/// 首页
-///
-/// 当前职责：
-/// 1. 持有 HomeController
-/// 2. 调度弹窗
-/// 3. 组合首页模块
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -26,6 +20,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final HomeController _controller;
   late final AssetImage _launchImage;
+
+  /// ===== 新增：公告显示状态 =====
+  bool _showAnnouncement = true;
 
   @override
   void initState() {
@@ -46,12 +43,10 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
-  /// 登录平台选择弹窗
   void _showLoginSheet() {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.sheet(context),
-      // surfaceTintColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -77,12 +72,10 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// 账号切换弹窗
   void _showAccountSwitchSheet(MusicPlatformState platform) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.sheet(context),
-      // surfaceTintColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -184,10 +177,104 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                 ),
+
+              /// ===== 新增：公告弹层 =====
+              if (_showAnnouncement &&
+                  !_controller.isInitializing &&
+                  _controller.errorMessage == null)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.all(24),
+                    child: _AnnouncementCard(
+                      onClose: () {
+                        setState(() {
+                          _showAnnouncement = false;
+                        });
+                      },
+                    ),
+                  ),
+                ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+/// ===== 新增：公告卡片 =====
+class _AnnouncementCard extends StatelessWidget {
+  final VoidCallback onClose;
+
+  const _AnnouncementCard({required this.onClose});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Container(
+      width: double.infinity,
+      constraints: BoxConstraints(
+        maxWidth: 420,
+        maxHeight: screenHeight * 0.72,
+      ),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF111111) : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          /// ===== 文本区域 =====
+          Flexible(
+            child: SingleChildScrollView(
+              child: Text(
+                '这个App目前是做成一个音乐库用的\n\n'
+                '不提供播放功能，主要是方便整理账号、歌单这些内容。\n\n'
+                '后面我会慢慢完善，有些功能现在还比较早期，可能会继续调整，我自己的想法也会慢慢往里面加。\n\n'
+                '有问题直接找我。',
+                textAlign: TextAlign.left,
+                style: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black87,
+                  fontSize: 15, // ✅ 字体缩小
+                  height: 1.6,
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          /// ===== 按钮 =====
+          SizedBox(
+            width: 82,
+            height: 34, // 更矮一点
+            child: TextButton(
+              onPressed: onClose,
+              style: TextButton.styleFrom(
+                backgroundColor: isDark
+                    ? const Color(0xFF3A3A3A)
+                    : const Color(0xFF3B82F6),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 12), // 关键：缩内边距
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8), // 收紧圆角
+                ),
+                textStyle: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              child: const Text('关闭'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

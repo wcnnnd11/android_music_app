@@ -29,7 +29,7 @@ class ApiMusicService implements IMusicService {
 
     try {
       final url = Uri.parse('$baseUrl/accounts');
-      final response = await http.get(url);
+      final response = await http.get(url).timeout(const Duration(seconds: 5));
 
       if (response.statusCode != 200) {
         throw Exception('请求失败: ${response.statusCode}');
@@ -98,7 +98,7 @@ class ApiMusicService implements IMusicService {
       if (account == null) return [];
 
       final url = Uri.parse('$baseUrl/playlists?account_id=${account.id}');
-      final response = await http.get(url);
+      final response = await http.get(url).timeout(const Duration(seconds: 5));
 
       if (response.statusCode != 200) {
         throw Exception('请求失败: ${response.statusCode}');
@@ -123,15 +123,17 @@ class ApiMusicService implements IMusicService {
     try {
       final url = Uri.parse('$baseUrl/accounts');
 
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'platform': platform,
-          'name': account.nickname,
-          'avatarUrl': '',
-        }),
-      );
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'platform': platform,
+              'name': account.nickname,
+              'avatarUrl': '',
+            }),
+          )
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode != 200) {
         throw Exception('新增账号失败: ${response.statusCode}');
@@ -155,7 +157,7 @@ class ApiMusicService implements IMusicService {
 
     try {
       final url = Uri.parse('$baseUrl/accounts/$accountId');
-      final response = await http.delete(url);
+      final response = await http.get(url).timeout(const Duration(seconds: 5));
 
       if (response.statusCode != 200) {
         throw Exception('删除账号失败: ${response.statusCode}');
