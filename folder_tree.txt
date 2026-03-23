@@ -22,7 +22,14 @@ music_app
 │   ├── widgets
 │   │   └── home
 │   │       ├── account_switch_sheet.dart
+│   │       ├── account_switch_sheet_overlay.dart
+│   │       ├── announcement_card.dart
+│   │       ├── home_announcement_overlay.dart
 │   │       ├── home_background.dart
+│   │       ├── home_bottom_sheets.dart
+│   │       ├── home_error_overlay.dart
+│   │       ├── home_loading_overlays.dart
+│   │       ├── home_page_content.dart
 │   │       ├── home_search_bar.dart
 │   │       ├── home_top_bar.dart
 │   │       ├── login_platform_sheet.dart
