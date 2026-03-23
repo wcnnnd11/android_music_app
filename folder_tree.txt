@@ -1,5 +1,7 @@
 music_app
 ├── lib
+│   ├── config
+│   │   └── app_config.dart
 │   ├── controllers
 │   │   └── home_controller.dart
 │   ├── data
