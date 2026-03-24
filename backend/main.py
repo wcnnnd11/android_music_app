@@ -36,6 +36,15 @@ class Playlist(BaseModel):
     coverUrl: Optional[str] = ""
     trackCount: int = 0
 
+class LoadingConfig(BaseModel):
+    enable: bool
+    image: str
+    text: str
+
+
+class AnnouncementConfig(BaseModel):
+    enable: bool
+    content: str
 
 accounts_db: List[MusicAccount] = [
     MusicAccount(
@@ -140,4 +149,27 @@ def get_playlists(account_id: str = Query(...)):
         "code": 0,
         "message": "success",
         "data": items
+    }
+
+remote_config = {
+    "loading": LoadingConfig(
+        enable=True,
+        image="assets/images/loading.jpg",
+        text="远程加载中..."
+    ),
+    "announcement": AnnouncementConfig(
+        enable=True,
+        content="这是远程公告，可以随时改，不用重新发版"
+    )
+}
+
+@app.get("/config")
+def get_config():
+    return {
+        "code": 0,
+        "message": "success",
+        "data": {
+            "loading": remote_config["loading"].model_dump(),
+            "announcement": remote_config["announcement"].model_dump()
+        }
     }

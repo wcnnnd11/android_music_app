@@ -195,4 +195,27 @@ class ApiMusicService implements IMusicService {
     final accounts = await getAccounts(platform);
     return accounts.isNotEmpty;
   }
+
+  Future<Map<String, dynamic>?> getRemoteConfig() async {
+    await init();
+
+    try {
+      final url = Uri.parse('$baseUrl/config');
+      final response = await http.get(url).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode != 200) {
+        throw Exception('配置请求失败: ${response.statusCode}');
+      }
+
+      final jsonData = json.decode(response.body);
+      final data = jsonData['data'];
+
+      if (data == null) return null;
+
+      return data as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('getRemoteConfig error: $e');
+      return null;
+    }
+  }
 }

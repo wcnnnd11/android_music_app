@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 
-import '../../config/app_config.dart';
-
 class AnnouncementCard extends StatelessWidget {
   final VoidCallback onClose;
+  final String content; // 🔥 必须有
 
-  const AnnouncementCard({super.key, required this.onClose});
+  const AnnouncementCard({
+    super.key,
+    required this.onClose,
+    required this.content, // 🔥 必须有
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -16,51 +19,51 @@ class AnnouncementCard extends StatelessWidget {
       width: double.infinity,
       constraints: BoxConstraints(
         maxWidth: 420,
-        maxHeight: screenHeight * 0.72,
+        maxHeight: screenHeight * 0.85,
       ),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF111111) : Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Stack(
         children: [
-          Flexible(
+          /// ===== 内容区域 =====
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
             child: SingleChildScrollView(
               child: Text(
-                AppConfig.announcement,
+                content, // ✅ 正确
                 textAlign: TextAlign.left,
                 style: TextStyle(
                   color: isDark ? Colors.white70 : Colors.black87,
-                  fontSize: 15,
-                  height: 1.6,
+                  fontSize: 13.5,
+                  height: 1.7,
                 ),
               ),
             ),
           ),
-          const SizedBox(height: 14),
-          SizedBox(
-            width: 82,
-            height: 34,
-            child: TextButton(
-              onPressed: onClose,
-              style: TextButton.styleFrom(
-                backgroundColor: isDark
-                    ? const Color(0xFF3A3A3A)
-                    : const Color(0xFF3B82F6),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+
+          /// ===== 右上角关闭按钮 =====
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: onClose,
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : Colors.black.withValues(alpha: 0.05),
+                  shape: BoxShape.circle,
                 ),
-                textStyle: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                child: Icon(
+                  Icons.close,
+                  size: 16,
+                  color: isDark ? Colors.white70 : Colors.black54,
                 ),
               ),
-              child: const Text('关闭'),
             ),
           ),
         ],

@@ -47,6 +47,7 @@ class HomeController extends ChangeNotifier {
       notifyListeners();
 
       await _musicService.init().timeout(_startupTimeout);
+      await fetchRemoteConfig().timeout(_startupTimeout);
       await refreshAll(isInit: true).timeout(_startupTimeout);
 
       final elapsed = DateTime.now().difference(startTime);
@@ -205,6 +206,19 @@ class HomeController extends ChangeNotifier {
     } finally {
       isOperating = false;
       notifyListeners();
+    }
+  }
+
+  Map<String, dynamic>? remoteConfig;
+  Future<void> fetchRemoteConfig() async {
+    try {
+      final config = await (_musicService as ApiMusicService).getRemoteConfig();
+      if (config != null) {
+        remoteConfig = config;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('fetchRemoteConfig error: $e');
     }
   }
 }
