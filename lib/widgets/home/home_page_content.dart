@@ -45,7 +45,7 @@ class _HomePageContentState extends State<HomePageContent> {
     final controller = widget.controller;
 
     return GestureDetector(
-      behavior: HitTestBehavior.opaque,
+      behavior: HitTestBehavior.translucent,
       onTap: () => _exitSearch(context),
       child: HomeBackground(
         child: SafeArea(
