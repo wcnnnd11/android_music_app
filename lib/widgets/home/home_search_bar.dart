@@ -87,36 +87,47 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
             ),
 
             /// ===== 右侧动态区域 =====
-            if (hasText) ...[
-              GestureDetector(
-                onTap: _clearSearch,
-                child: Icon(
-                  Icons.close,
-                  size: 18,
-                  color: isDark ? Colors.white54 : Colors.black54,
+            /// ===== 右侧动态区域 =====
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                /// 清空按钮（有内容才显示）
+                if (hasText) ...[
+                  GestureDetector(
+                    onTap: _clearSearch,
+                    child: Icon(
+                      Icons.close,
+                      size: 18,
+                      color: isDark ? Colors.white54 : Colors.black54,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+
+                /// 分割线（始终存在）
+                Container(
+                  width: 1,
+                  height: 20,
+                  color: isDark ? Colors.white12 : Colors.black12,
                 ),
-              ),
-            ] else ...[
-              Container(
-                width: 1,
-                height: 20,
-                color: isDark ? Colors.white12 : Colors.black12,
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: _submitSearch,
-                child: Text(
-                  '搜索',
-                  style: TextStyle(
-                    color: isDark
-                        ? Colors.white70
-                        : Colors.black87.withValues(alpha: 0.6),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+                const SizedBox(width: 8),
+
+                /// 搜索按钮（始终存在）
+                GestureDetector(
+                  onTap: _submitSearch,
+                  child: Text(
+                    '搜索',
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.white70
+                          : Colors.black87.withValues(alpha: 0.6),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ],
         ),
       ),

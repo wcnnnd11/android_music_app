@@ -292,7 +292,32 @@ class ApiMusicService implements IMusicService {
   }) async {
     await init();
 
-    /// TODO: 后端实现后接入
-    return null;
+    try {
+      final queryParams = {
+        'song_id': songId,
+        'platform': platform,
+        'quality': quality ?? 'standard',
+      };
+
+      final uri = Uri.parse(
+        '$baseUrl/song/resource',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(uri).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode != 200) {
+        throw Exception('获取歌曲资源失败: ${response.statusCode}');
+      }
+
+      final jsonData = json.decode(response.body);
+      final data = jsonData['data'];
+
+      if (data == null) return null;
+
+      return data as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('getSongResource error: $e');
+      return null;
+    }
   }
 }

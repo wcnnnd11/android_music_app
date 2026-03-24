@@ -54,4 +54,30 @@ class SearchController extends ChangeNotifier {
     errorMessage = null;
     notifyListeners();
   }
+
+  Future<Map<String, dynamic>?> fetchSongResource(
+    Map<String, dynamic> song,
+  ) async {
+    try {
+      final songId = song['id'];
+      final platform = song['platform'];
+
+      if (songId == null || platform == null) {
+        debugPrint('song 数据不完整: $song');
+        return null;
+      }
+
+      final res = await _musicService.getSongResource(
+        songId: songId,
+        platform: platform,
+        quality: 'standard', // 统一用标准音质试听
+      );
+
+      debugPrint('获取歌曲资源成功: $res');
+      return res;
+    } catch (e) {
+      debugPrint('获取歌曲资源失败: $e');
+      return null;
+    }
+  }
 }

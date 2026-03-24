@@ -36,6 +36,7 @@ class Playlist(BaseModel):
     coverUrl: Optional[str] = ""
     trackCount: int = 0
 
+
 class LoadingConfig(BaseModel):
     enable: bool
     image: str
@@ -45,6 +46,23 @@ class LoadingConfig(BaseModel):
 class AnnouncementConfig(BaseModel):
     enable: bool
     content: str
+
+
+class SearchSong(BaseModel):
+    id: str
+    platform: str
+    title: str
+    artist: str
+    duration: int
+    quality: List[str] = []
+
+
+class SongResource(BaseModel):
+    songId: str
+    platform: str
+    quality: str
+    url: str
+
 
 accounts_db: List[MusicAccount] = [
     MusicAccount(
@@ -87,6 +105,53 @@ playlists_db: List[Playlist] = [
         trackCount=18
     ),
 ]
+
+search_songs_db: List[SearchSong] = [
+    SearchSong(
+        id="qq_song_1",
+        platform="qq",
+        title="夜曲",
+        artist="周杰伦",
+        duration=245,
+        quality=["standard", "hq", "sq"]
+    ),
+    SearchSong(
+        id="qq_song_2",
+        platform="qq",
+        title="晴天",
+        artist="周杰伦",
+        duration=269,
+        quality=["standard", "hq"]
+    ),
+    SearchSong(
+        id="netease_song_1",
+        platform="netease",
+        title="起风了",
+        artist="买辣椒也用券",
+        duration=311,
+        quality=["standard", "hq", "sq"]
+    ),
+    SearchSong(
+        id="netease_song_2",
+        platform="netease",
+        title="123木头人",
+        artist="黑涩会美眉",
+        duration=198,
+        quality=["standard"]
+    ),
+]
+
+remote_config = {
+    "loading": LoadingConfig(
+        enable=True,
+        image="assets/images/loading.jpg",
+        text="远程加载中..."
+    ),
+    "announcement": AnnouncementConfig(
+        enable=True,
+        content="这是远程公告，可以随时改，不用重新发版"
+    )
+}
 
 
 @app.get("/health")
@@ -151,17 +216,6 @@ def get_playlists(account_id: str = Query(...)):
         "data": items
     }
 
-remote_config = {
-    "loading": LoadingConfig(
-        enable=True,
-        image="assets/images/loading.jpg",
-        text="远程加载中..."
-    ),
-    "announcement": AnnouncementConfig(
-        enable=True,
-        content="这是远程公告，可以随时改，不用重新发版"
-    )
-}
 
 @app.get("/config")
 def get_config():
@@ -173,3 +227,68 @@ def get_config():
             "announcement": remote_config["announcement"].model_dump()
         }
     }
+
+
+@app.get("/search")
+def search_songs(
+    keyword: str = Query(...),
+    platform: Optional[str] = Query(None),
+    page: int = Query(1),
+    page_size: int = Query(20),
+):
+    normalized = keyword.strip().lower()
+
+    filtered = []
+    for item in search_songs_db:
+        if platform and platform not in ["defaultPlatform", item.platform]:
+            continue
+
+        if (
+            normalized in item.title.lower()
+            or normalized in item.artist.lower()
+            or normalized in item.id.lower()
+        ):
+            filtered.append(item.model_dump())
+
+    start = max((page - 1) * page_size, 0)
+    end = start + page_size
+    paged = filtered[start:end]
+
+    return {
+        "code": 0,
+        "message": "success",
+        "data": paged
+    }
+
+
+@app.get("/song/resource")
+def get_song_resource(
+    song_id: str = Query(...),
+    platform: str = Query(...),
+    quality: str = Query("standard"),
+):
+    target = next(
+        (
+            item for item in search_songs_db
+            if item.id == song_id and item.platform == platform
+        ),
+        None
+    )
+
+    if target is None:
+        raise HTTPException(status_code=404, detail="song not found")
+
+    if quality not in target.quality:
+        quality = "standard"
+
+    return {
+        "code": 0,
+        "message": "success",
+        "data": SongResource(
+            songId=song_id,
+            platform=platform,
+            quality=quality,
+            url="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"
+        ).model_dump()
+    }
+

@@ -4,14 +4,14 @@ class HomeSearchResultSection extends StatelessWidget {
   final String keyword;
   final List<Map<String, dynamic>> results;
   final bool isLoading;
-  final ValueChanged<String> onSongTap; // 点击歌曲的回调
+  final ValueChanged<Map<String, dynamic>> onSongTap; // 改这里
 
   const HomeSearchResultSection({
     super.key,
     required this.keyword,
     required this.results,
     required this.isLoading,
-    required this.onSongTap, // 传递点击事件
+    required this.onSongTap,
   });
 
   String formatDuration(int seconds) {
@@ -42,7 +42,6 @@ class HomeSearchResultSection extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        /// 加载中
         if (isLoading)
           const Center(
             child: Padding(
@@ -50,7 +49,6 @@ class HomeSearchResultSection extends StatelessWidget {
               child: CircularProgressIndicator(),
             ),
           )
-        /// 无结果
         else if (results.isEmpty)
           Container(
             width: double.infinity,
@@ -61,7 +59,6 @@ class HomeSearchResultSection extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           )
-        /// 有结果
         else
           Column(
             children: results
@@ -69,7 +66,7 @@ class HomeSearchResultSection extends StatelessWidget {
                   (item) => Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: GestureDetector(
-                      onTap: () => onSongTap(item['id']), // 触发点击事件
+                      onTap: () => onSongTap(item), // 改这里
                       child: _SearchResultCard(item: item),
                     ),
                   ),
@@ -152,7 +149,7 @@ class _SearchResultCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(formatDuration(duration)),
                     const SizedBox(width: 8),
-                    Text(quality, style: TextStyle(fontSize: 12)),
+                    Text(quality, style: const TextStyle(fontSize: 12)),
                   ],
                 ),
               ],
