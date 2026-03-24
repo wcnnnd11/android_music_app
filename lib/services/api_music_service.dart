@@ -218,4 +218,81 @@ class ApiMusicService implements IMusicService {
       return null;
     }
   }
+
+  /// ===== 搜索 =====
+  @override
+  Future<List<Map<String, dynamic>>> searchSongs({
+    required String keyword,
+    String? platform,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    await init();
+
+    try {
+      final queryParams = {
+        'keyword': keyword,
+        'page': page.toString(),
+        'page_size': pageSize.toString(),
+        'platform': platform ?? 'defaultPlatform',
+      };
+
+      final uri = Uri.parse(
+        '$baseUrl/search',
+      ).replace(queryParameters: queryParams);
+
+      final response = await http.get(uri).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode != 200) {
+        throw Exception('搜索失败: ${response.statusCode}');
+      }
+
+      final jsonData = json.decode(response.body);
+      final List list = jsonData['data'] ?? [];
+
+      return list.cast<Map<String, dynamic>>();
+    } catch (e) {
+      debugPrint('searchSongs error: $e');
+      return [];
+    }
+  }
+
+  /// ===== 歌单歌曲 =====（占位）
+  @override
+  Future<List<Map<String, dynamic>>> getPlaylistSongs(
+    String platform,
+    String playlistId, {
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    await init();
+
+    /// TODO: 后端实现后接入
+    return [];
+  }
+
+  /// ===== 歌曲详情 =====（占位）
+  @override
+  Future<Map<String, dynamic>?> getSongDetail({
+    required String platform,
+    required String songId,
+  }) async {
+    await init();
+
+    /// TODO: 后端实现后接入
+    return null;
+  }
+
+  /// ===== 歌曲资源 =====（占位）
+  @override
+  Future<Map<String, dynamic>?> getSongResource({
+    required String platform,
+    required String songId,
+    String? quality,
+  }) async {
+    await init();
+
+    /// TODO: 后端实现后接入
+    return null;
+  }
 }

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/music_platform_state.dart';
+
 import '../models/music_account.dart';
-import '../services/music_service.dart';
+import '../models/music_platform_state.dart';
 import '../models/playlist.dart';
 import '../services/api_music_service.dart';
+import '../services/music_service.dart';
 
 class HomeController extends ChangeNotifier {
   final IMusicService _musicService = ApiMusicService();
@@ -12,14 +13,13 @@ class HomeController extends ChangeNotifier {
   bool isOperating = false; // 操作 loading（转圈）
   String? errorMessage;
 
-  static const Duration _minLaunchDuration = Duration(
-    milliseconds: 3000,
-  ); // 最短启动展示时间
-
-  static const Duration _startupTimeout = Duration(seconds: 5); // 启动阶段超时保护
+  static const Duration _minLaunchDuration = Duration(milliseconds: 3000);
+  static const Duration _startupTimeout = Duration(seconds: 5);
 
   late final MusicPlatformState qqPlatform;
   late final MusicPlatformState neteasePlatform;
+
+  Map<String, dynamic>? remoteConfig;
 
   HomeController() {
     qqPlatform = MusicPlatformState(
@@ -52,9 +52,8 @@ class HomeController extends ChangeNotifier {
 
       final elapsed = DateTime.now().difference(startTime);
       final remaining = _minLaunchDuration - elapsed;
-
       if (remaining > Duration.zero) {
-        await Future.delayed(remaining); // 保证最短展示时间
+        await Future.delayed(remaining);
       }
     } catch (e) {
       errorMessage = '启动失败：$e';
@@ -62,7 +61,7 @@ class HomeController extends ChangeNotifier {
       final elapsed = DateTime.now().difference(startTime);
       final remaining = _minLaunchDuration - elapsed;
       if (remaining > Duration.zero) {
-        await Future.delayed(remaining); // 保证最短展示时间
+        await Future.delayed(remaining);
       }
     } finally {
       isInitializing = false;
@@ -75,7 +74,6 @@ class HomeController extends ChangeNotifier {
   }
 
   MusicAccount? get currentAccount {
-    // 先看 QQ
     if (qqPlatform.currentAccountId != null) {
       try {
         return qqPlatform.accounts.firstWhere(
@@ -84,7 +82,6 @@ class HomeController extends ChangeNotifier {
       } catch (_) {}
     }
 
-    // 再看网易
     if (neteasePlatform.currentAccountId != null) {
       try {
         return neteasePlatform.accounts.firstWhere(
@@ -103,7 +100,7 @@ class HomeController extends ChangeNotifier {
     return neteasePlatform;
   }
 
-  /// 刷新
+  /// 刷新首页数据
   Future<void> refreshAll({bool isInit = false}) async {
     try {
       if (!isInit) {
@@ -123,14 +120,12 @@ class HomeController extends ChangeNotifier {
           .getPlaylists('qq')
           .timeout(_startupTimeout);
 
-      qqPlatform.playlists
-        ..clear()
-        ..addAll(qqPlaylists);
-
       qqPlatform.accounts
         ..clear()
         ..addAll(qqAccounts);
-
+      qqPlatform.playlists
+        ..clear()
+        ..addAll(qqPlaylists);
       qqPlatform.currentAccountId = qqCurrent?.id;
 
       final neteaseAccounts = await _musicService
@@ -143,14 +138,12 @@ class HomeController extends ChangeNotifier {
           .getPlaylists('netease')
           .timeout(_startupTimeout);
 
-      neteasePlatform.playlists
-        ..clear()
-        ..addAll(neteasePlaylists);
-
       neteasePlatform.accounts
         ..clear()
         ..addAll(neteaseAccounts);
-
+      neteasePlatform.playlists
+        ..clear()
+        ..addAll(neteasePlaylists);
       neteasePlatform.currentAccountId = neteaseCurrent?.id;
     } catch (e) {
       errorMessage = '数据加载失败：$e';
@@ -231,7 +224,6 @@ class HomeController extends ChangeNotifier {
     }
   }
 
-  Map<String, dynamic>? remoteConfig;
   Future<void> fetchRemoteConfig() async {
     try {
       final config = await (_musicService as ApiMusicService).getRemoteConfig();
@@ -241,6 +233,33 @@ class HomeController extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('fetchRemoteConfig error: $e');
+    }
+  }
+
+  Future<void> getSongResource(String songId) async {
+    try {
+      isOperating = true;
+      errorMessage = null;
+      notifyListeners();
+
+      final resource = await _musicService.getSongResource(
+        platform: 'qq', // 假设是 QQ 音乐
+        songId: songId,
+      );
+
+      // 假数据：可以扩展为真正的播放逻辑
+      debugPrint('获取到的播放资源: $resource');
+
+      // 播放逻辑
+      if (resource != null) {
+        // 假设资源包含 URL，可以用播放器打开
+        debugPrint('开始播放：${resource['url']}');
+      }
+    } catch (e) {
+      errorMessage = '获取播放资源失败：$e';
+    } finally {
+      isOperating = false;
+      notifyListeners();
     }
   }
 }

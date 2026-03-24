@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
+
 import '../models/music_account.dart';
-import 'music_service.dart';
 import '../models/playlist.dart';
+import 'music_service.dart';
 
 /// Mock 音乐服务
 ///
@@ -25,6 +26,65 @@ class MockMusicService implements IMusicService {
     MusicPlatforms.qq: null,
     MusicPlatforms.netease: null,
   };
+
+  static const List<Map<String, dynamic>> _mockSearchSongs = [
+    {
+      'id': 'qq_song_001',
+      'platform': MusicPlatforms.qq,
+      'title': '夜曲',
+      'artist': '周杰伦',
+      'album': '十一月的萧邦',
+      'subtitle': '周杰伦 · 十一月的萧邦',
+    },
+    {
+      'id': 'qq_song_002',
+      'platform': MusicPlatforms.qq,
+      'title': '晴天',
+      'artist': '周杰伦',
+      'album': '叶惠美',
+      'subtitle': '周杰伦 · 叶惠美',
+    },
+    {
+      'id': 'qq_song_003',
+      'platform': MusicPlatforms.qq,
+      'title': '稻香',
+      'artist': '周杰伦',
+      'album': '魔杰座',
+      'subtitle': '周杰伦 · 魔杰座',
+    },
+    {
+      'id': 'qq_song_004',
+      'platform': MusicPlatforms.qq,
+      'title': '七里香',
+      'artist': '周杰伦',
+      'album': '七里香',
+      'subtitle': '周杰伦 · 七里香',
+    },
+    {
+      'id': 'netease_song_001',
+      'platform': MusicPlatforms.netease,
+      'title': '演员',
+      'artist': '薛之谦',
+      'album': '绅士',
+      'subtitle': '薛之谦 · 绅士',
+    },
+    {
+      'id': 'netease_song_002',
+      'platform': MusicPlatforms.netease,
+      'title': '起风了',
+      'artist': '买辣椒也用券',
+      'album': '起风了',
+      'subtitle': '买辣椒也用券 · 起风了',
+    },
+    {
+      'id': 'netease_song_003',
+      'platform': MusicPlatforms.netease,
+      'title': '光年之外',
+      'artist': '邓紫棋',
+      'album': '光年之外',
+      'subtitle': '邓紫棋 · 光年之外',
+    },
+  ];
 
   bool _initialized = false;
 
@@ -155,5 +215,93 @@ class MockMusicService implements IMusicService {
     await init();
     final list = _accountsByPlatform[platform] ?? [];
     return list.isNotEmpty;
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getPlaylistSongs(
+    String platform,
+    String playlistId, {
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    await init();
+
+    return _mockSearchSongs
+        .where((song) => song['platform'] == platform)
+        .skip((page - 1) * pageSize)
+        .take(pageSize)
+        .map((song) => Map<String, dynamic>.from(song))
+        .toList();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> searchSongs({
+    required String keyword,
+    String? platform,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    await init();
+
+    final normalizedKeyword = keyword.trim().toLowerCase();
+    if (normalizedKeyword.isEmpty) return [];
+
+    final filtered = _mockSearchSongs.where((song) {
+      final matchesPlatform = platform == null || song['platform'] == platform;
+      final title = (song['title'] ?? '').toString().toLowerCase();
+      final subtitle = (song['subtitle'] ?? '').toString().toLowerCase();
+      final artist = (song['artist'] ?? '').toString().toLowerCase();
+      final album = (song['album'] ?? '').toString().toLowerCase();
+
+      return matchesPlatform &&
+          (title.contains(normalizedKeyword) ||
+              subtitle.contains(normalizedKeyword) ||
+              artist.contains(normalizedKeyword) ||
+              album.contains(normalizedKeyword));
+    }).toList();
+
+    return filtered
+        .skip((page - 1) * pageSize)
+        .take(pageSize)
+        .map((song) => Map<String, dynamic>.from(song))
+        .toList();
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getSongDetail({
+    required String platform,
+    required String songId,
+  }) async {
+    await init();
+
+    try {
+      final song = _mockSearchSongs.firstWhere(
+        (item) => item['platform'] == platform && item['id'] == songId,
+      );
+      return Map<String, dynamic>.from(song);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>?> getSongResource({
+    required String platform,
+    required String songId,
+    String? quality,
+  }) async {
+    await init();
+
+    final detail = await getSongDetail(platform: platform, songId: songId);
+    if (detail == null) return null;
+
+    return {
+      'song_id': songId,
+      'platform': platform,
+      'quality': quality ?? 'standard',
+      'url': 'https://example.com/mock/$platform/$songId.mp3',
+      'expires_at': null,
+      'headers': <String, String>{},
+    };
   }
 }

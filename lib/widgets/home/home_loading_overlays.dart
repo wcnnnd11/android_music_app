@@ -11,7 +11,7 @@ class LaunchLoadingOverlay extends StatelessWidget {
       child: Container(
         color: Colors.black,
         alignment: Alignment.center,
-        child: Image(image: image, fit: BoxFit.contain),
+        child: Image(image: image, fit: BoxFit.cover),
       ),
     );
   }

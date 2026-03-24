@@ -18,6 +18,11 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
     super.initState();
     _controller = TextEditingController();
     _focusNode = FocusNode();
+
+    /// 监听输入变化（用于刷新UI）
+    _controller.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
@@ -33,9 +38,16 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
     debugPrint('搜索内容: $keyword');
   }
 
+  void _clearSearch() {
+    _controller.clear();
+    widget.onSearch?.call(''); // 触发退出搜索态
+    FocusScope.of(context).unfocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final hasText = _controller.text.isNotEmpty;
 
     return GestureDetector(
       onTap: () {
@@ -73,25 +85,38 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
                 onSubmitted: (_) => _submitSearch(),
               ),
             ),
-            Container(
-              width: 1,
-              height: 20,
-              color: isDark ? Colors.white12 : Colors.black12,
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: _submitSearch,
-              child: Text(
-                '搜索',
-                style: TextStyle(
-                  color: isDark
-                      ? Colors.white70
-                      : Colors.black87.withValues(alpha: 0.6),
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+
+            /// ===== 右侧动态区域 =====
+            if (hasText) ...[
+              GestureDetector(
+                onTap: _clearSearch,
+                child: Icon(
+                  Icons.close,
+                  size: 18,
+                  color: isDark ? Colors.white54 : Colors.black54,
                 ),
               ),
-            ),
+            ] else ...[
+              Container(
+                width: 1,
+                height: 20,
+                color: isDark ? Colors.white12 : Colors.black12,
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: _submitSearch,
+                child: Text(
+                  '搜索',
+                  style: TextStyle(
+                    color: isDark
+                        ? Colors.white70
+                        : Colors.black87.withValues(alpha: 0.6),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

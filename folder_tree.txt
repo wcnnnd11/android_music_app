@@ -3,7 +3,8 @@ music_app
 │   ├── config
 │   │   └── app_config.dart
 │   ├── controllers
-│   │   └── home_controller.dart
+│   │   ├── home_controller.dart
+│   │   └── search_controller.dart
 │   ├── data
 │   │   └── mock_music_data.dart
 │   ├── models
@@ -32,6 +33,7 @@ music_app
 │   │       ├── home_loading_overlays.dart
 │   │       ├── home_page_content.dart
 │   │       ├── home_search_bar.dart
+│   │       ├── home_search_result_section.dart
 │   │       ├── home_top_bar.dart
 │   │       ├── login_platform_sheet.dart
 │   │       ├── mini_player.dart
