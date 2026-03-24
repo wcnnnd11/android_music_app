@@ -3,19 +3,18 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../theme/app_theme_mode.dart';
 
-/// 首页顶部导航栏
-///
-/// 职责：
-/// 1. 显示标题
-/// 2. 提供浅色 / 深色切换按钮
-/// 3. 提供登录按钮入口
-/// 4. 提供毛玻璃效果
 class HomeTopBar extends StatelessWidget implements PreferredSizeWidget {
+  final VoidCallback onTapMenu;
   final VoidCallback onTapLogin;
+
+  /// 👇 新增：头像
+  final String? avatarUrl;
 
   const HomeTopBar({
     super.key,
+    required this.onTapMenu,
     required this.onTapLogin,
+    this.avatarUrl,
   });
 
   @override
@@ -26,8 +25,6 @@ class HomeTopBar extends StatelessWidget implements PreferredSizeWidget {
     return AnimatedBuilder(
       animation: appThemeController,
       builder: (context, _) {
-        /// 这里优先根据全局主题控制器判断，
-        /// 避免按钮点击后图标状态没有及时更新
         final isDark = appThemeController.isDarkMode;
 
         return AppBar(
@@ -37,17 +34,14 @@ class HomeTopBar extends StatelessWidget implements PreferredSizeWidget {
           scrolledUnderElevation: 0,
           automaticallyImplyLeading: false,
           centerTitle: false,
-          title: Text(
-            '首页',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : Colors.black,
-            ),
+
+          leading: IconButton(
+            onPressed: onTapMenu,
+            icon: Icon(Icons.menu, color: isDark ? Colors.white : Colors.black),
+            tooltip: '打开侧边栏',
           ),
+
           actions: [
-            /// 浅深色切换按钮
-            /// 当前是深色 -> 显示太阳
-            /// 当前是浅色 -> 显示月亮
             IconButton(
               onPressed: () {
                 appThemeController.toggleLightDark();
@@ -56,25 +50,38 @@ class HomeTopBar extends StatelessWidget implements PreferredSizeWidget {
                 isDark ? Icons.wb_sunny_outlined : Icons.nightlight_round,
                 color: isDark ? Colors.white : Colors.black,
               ),
-              tooltip: isDark ? '切换到浅色模式' : '切换到深色模式',
             ),
+
             Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: TextButton(
-                onPressed: onTapLogin,
-                child: Text(
-                  '登录',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: isDark ? Colors.white : Colors.black,
-                  ),
-                ),
-              ),
+              child: avatarUrl == null
+                  /// 👇 未登录
+                  ? TextButton(
+                      onPressed: onTapLogin,
+                      child: Text(
+                        '登录',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: isDark ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    )
+                  /// 👇 已登录：显示头像
+                  : GestureDetector(
+                      onTap: onTapLogin,
+                      child: CircleAvatar(
+                        radius: 16,
+                        backgroundColor: isDark
+                            ? Colors.white12
+                            : Colors.black12,
+                        backgroundImage: avatarUrl!.startsWith('http')
+                            ? NetworkImage(avatarUrl!)
+                            : AssetImage(avatarUrl!) as ImageProvider,
+                      ),
+                    ),
             ),
           ],
 
-          /// 毛玻璃层
-          /// 浅色下不要太白，改成灰白半透明
           flexibleSpace: ClipRect(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),

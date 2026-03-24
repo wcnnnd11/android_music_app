@@ -74,6 +74,28 @@ class HomeController extends ChangeNotifier {
     return qqPlatform.hasAccounts || neteasePlatform.hasAccounts;
   }
 
+  MusicAccount? get currentAccount {
+    // 先看 QQ
+    if (qqPlatform.currentAccountId != null) {
+      try {
+        return qqPlatform.accounts.firstWhere(
+          (acc) => acc.id == qqPlatform.currentAccountId,
+        );
+      } catch (_) {}
+    }
+
+    // 再看网易
+    if (neteasePlatform.currentAccountId != null) {
+      try {
+        return neteasePlatform.accounts.firstWhere(
+          (acc) => acc.id == neteasePlatform.currentAccountId,
+        );
+      } catch (_) {}
+    }
+
+    return null;
+  }
+
   MusicPlatformState getPlatformByKey(String platformKey) {
     if (platformKey == 'qq') {
       return qqPlatform;

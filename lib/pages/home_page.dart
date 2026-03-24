@@ -7,6 +7,7 @@ import '../widgets/home/home_loading_overlays.dart';
 import '../widgets/home/home_error_overlay.dart';
 import '../widgets/home/home_bottom_sheets.dart';
 import '../widgets/home/home_page_content.dart';
+import '../widgets/home/home_drawer.dart'; // 👈 新增
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,8 +19,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final HomeController _controller;
   late final AssetImage _launchImage;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  /// ===== 新增：公告显示状态 =====
   bool _showAnnouncement = true;
 
   @override
@@ -66,18 +67,33 @@ class _HomePageState extends State<HomePage> {
             AppConfig.announcement.content;
 
         return Scaffold(
+          key: _scaffoldKey,
           extendBodyBehindAppBar: true,
           backgroundColor: Colors.transparent,
+
+          /// ✅ 抽离后的 drawer
+          drawer: HomeDrawer(
+            onTapAnnouncement: () {
+              setState(() {
+                _showAnnouncement = true;
+              });
+            },
+          ),
+
           appBar: _showAnnouncement
               ? null
               : HomeTopBar(
+                  onTapMenu: () {
+                    _scaffoldKey.currentState?.openDrawer();
+                  },
                   onTapLogin: () {
                     showLoginSheet(context: context, controller: _controller);
                   },
+                  avatarUrl: _controller.currentAccount?.avatarUrl, // 👈 新增
                 ),
+
           body: Stack(
             children: [
-              /// 原本页面
               HomePageContent(
                 controller: _controller,
                 onTapAccountSwitcher: (platform) {
@@ -89,7 +105,7 @@ class _HomePageState extends State<HomePage> {
                 },
               ),
 
-              /// ===== loading 覆盖层 =====
+              /// loading
               if (loadingEnabled && _controller.isInitializing)
                 LaunchLoadingOverlay(
                   image: loadingImagePath.startsWith('http')
@@ -97,20 +113,19 @@ class _HomePageState extends State<HomePage> {
                       : AssetImage(loadingImagePath),
                 ),
 
-              /// App 内操作 loading
               if (_controller.isOperating) const OperatingLoadingOverlay(),
 
-              /// ===== error 覆盖层 =====
+              /// error
               if (_controller.errorMessage != null)
                 HomeErrorOverlay(message: _controller.errorMessage!),
 
-              /// ===== 新增：公告弹层 =====
+              /// 公告
               if (announcementEnabled &&
                   _showAnnouncement &&
                   !_controller.isInitializing &&
                   _controller.errorMessage == null)
                 HomeAnnouncementOverlay(
-                  content: announcementContent, // 🔥 新增
+                  content: announcementContent,
                   onClose: () {
                     setState(() {
                       _showAnnouncement = false;
