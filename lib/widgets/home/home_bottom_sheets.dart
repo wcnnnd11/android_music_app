@@ -70,3 +70,67 @@ void showAccountSwitchSheet({
     },
   );
 }
+
+void showSearchSheet({required BuildContext context}) {
+  final textController = TextEditingController();
+  final focusNode = FocusNode();
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true, // 🔥 关键：让键盘顶上来
+    backgroundColor: AppColors.sheet(context),
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) {
+      // 自动聚焦（弹出键盘）
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        focusNode.requestFocus();
+      });
+
+      return Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 16, // 🔥 适配键盘
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            /// 输入框
+            TextField(
+              controller: textController,
+              focusNode: focusNode,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: '搜索歌曲、歌手、专辑',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              onSubmitted: (value) {
+                debugPrint('搜索内容: $value');
+              },
+            ),
+
+            const SizedBox(height: 12),
+
+            /// 占位提示（后面会替换成结果）
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                '输入关键词开始搜索',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}

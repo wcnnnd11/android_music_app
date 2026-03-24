@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../controllers/home_controller.dart';
-import '../widgets/home/home_top_bar.dart';
 import '../config/app_config.dart';
+import '../controllers/home_controller.dart';
 import '../widgets/home/home_announcement_overlay.dart';
-import '../widgets/home/home_loading_overlays.dart';
-import '../widgets/home/home_error_overlay.dart';
 import '../widgets/home/home_bottom_sheets.dart';
+import '../widgets/home/home_drawer.dart';
+import '../widgets/home/home_error_overlay.dart';
+import '../widgets/home/home_loading_overlays.dart';
 import '../widgets/home/home_page_content.dart';
-import '../widgets/home/home_drawer.dart'; // 👈 新增
+import '../widgets/home/home_top_bar.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,6 +22,7 @@ class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   bool _showAnnouncement = true;
+  bool _forceShowAnnouncement = false;
 
   @override
   void initState() {
@@ -66,21 +67,34 @@ class _HomePageState extends State<HomePage> {
             remoteAnnouncement?['content'] as String? ??
             AppConfig.announcement.content;
 
+        final shouldShowAutoAnnouncement =
+            announcementEnabled &&
+            _showAnnouncement &&
+            !_controller.isInitializing &&
+            _controller.errorMessage == null;
+
+        final shouldShowAnnouncement =
+            _forceShowAnnouncement || shouldShowAutoAnnouncement;
+
+        final shouldHideTopBar =
+            (loadingEnabled && _controller.isInitializing) ||
+            shouldShowAnnouncement;
+
         return Scaffold(
           key: _scaffoldKey,
           extendBodyBehindAppBar: true,
           backgroundColor: Colors.transparent,
-
-          /// ✅ 抽离后的 drawer
           drawer: HomeDrawer(
             onTapAnnouncement: () {
-              setState(() {
-                _showAnnouncement = true;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                setState(() {
+                  _forceShowAnnouncement = true;
+                });
               });
             },
           ),
-
-          appBar: _showAnnouncement
+          appBar: shouldHideTopBar
               ? null
               : HomeTopBar(
                   onTapMenu: () {
@@ -89,9 +103,8 @@ class _HomePageState extends State<HomePage> {
                   onTapLogin: () {
                     showLoginSheet(context: context, controller: _controller);
                   },
-                  avatarUrl: _controller.currentAccount?.avatarUrl, // 👈 新增
+                  avatarUrl: _controller.currentAccount?.avatarUrl,
                 ),
-
           body: Stack(
             children: [
               HomePageContent(
@@ -104,31 +117,23 @@ class _HomePageState extends State<HomePage> {
                   );
                 },
               ),
-
-              /// loading
               if (loadingEnabled && _controller.isInitializing)
                 LaunchLoadingOverlay(
                   image: loadingImagePath.startsWith('http')
                       ? NetworkImage(loadingImagePath)
                       : AssetImage(loadingImagePath),
                 ),
-
               if (_controller.isOperating) const OperatingLoadingOverlay(),
-
-              /// error
               if (_controller.errorMessage != null)
                 HomeErrorOverlay(message: _controller.errorMessage!),
-
-              /// 公告
-              if (announcementEnabled &&
-                  _showAnnouncement &&
-                  !_controller.isInitializing &&
-                  _controller.errorMessage == null)
+              if (shouldShowAnnouncement)
                 HomeAnnouncementOverlay(
                   content: announcementContent,
+                  ignoreShownOnce: _forceShowAnnouncement,
                   onClose: () {
                     setState(() {
                       _showAnnouncement = false;
+                      _forceShowAnnouncement = false;
                     });
                   },
                 ),

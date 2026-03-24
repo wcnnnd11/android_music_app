@@ -27,6 +27,7 @@ music_app
 │   │       ├── home_announcement_overlay.dart
 │   │       ├── home_background.dart
 │   │       ├── home_bottom_sheets.dart
+│   │       ├── home_drawer.dart
 │   │       ├── home_error_overlay.dart
 │   │       ├── home_loading_overlays.dart
 │   │       ├── home_page_content.dart

@@ -52,7 +52,10 @@ class HomeDrawer extends StatelessWidget {
               title: const Text('查看公告'),
               onTap: () {
                 Navigator.pop(context);
-                onTapAnnouncement(); // 👈 通知外部
+
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  onTapAnnouncement();
+                });
               },
             ),
           ],
