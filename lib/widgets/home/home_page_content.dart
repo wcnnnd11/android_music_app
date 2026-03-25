@@ -43,7 +43,18 @@ class _HomePageContentState extends State<HomePageContent> {
   }
 
   Future<void> _handleSongTap(Map<String, dynamic> song) async {
+    final songId = song['id'];
+    _isPreviewPlaying = true;
+
     debugPrint('点击歌曲: $song');
+
+    // ✅ 如果是当前正在试听的歌曲 → 切换播放/暂停
+    if (_currentPreviewSong != null &&
+        _currentPreviewSong!['id'] == songId &&
+        _currentPreviewUrl != null) {
+      await _handlePreviewPlayPause();
+      return;
+    }
 
     final resource = await _searchController.fetchSongResource(song);
 
@@ -69,22 +80,53 @@ class _HomePageContentState extends State<HomePageContent> {
     }
 
     try {
-      await _audioPlayer.stop();
-      await _audioPlayer.setUrl(playUrl);
-      await _audioPlayer.play();
-
-      if (!mounted) return;
-
+      // ✅ 先更新 UI（关键！）
       setState(() {
         _currentPreviewSong = song;
         _currentPreviewUrl = playUrl;
         _isMiniPlayerVisible = true;
         _isPreviewPlaying = true;
       });
+
+      try {
+        await _audioPlayer.stop();
+        await _audioPlayer.setUrl(playUrl);
+        await _audioPlayer.play();
+      } catch (e) {
+        debugPrint('试听播放失败: $e');
+
+        try {
+          await _audioPlayer.stop();
+        } catch (_) {}
+
+        if (!mounted) return;
+
+        setState(() {
+          _currentPreviewSong = null;
+          _currentPreviewUrl = null;
+          _isMiniPlayerVisible = false;
+          _isPreviewPlaying = false;
+        });
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('试听播放失败')));
+      }
     } catch (e) {
       debugPrint('试听播放失败: $e');
 
+      try {
+        await _audioPlayer.stop();
+      } catch (_) {}
+
       if (!mounted) return;
+
+      setState(() {
+        _currentPreviewSong = null;
+        _currentPreviewUrl = null;
+        _isMiniPlayerVisible = false;
+        _isPreviewPlaying = false;
+      });
 
       ScaffoldMessenger.of(
         context,
@@ -104,9 +146,7 @@ class _HomePageContentState extends State<HomePageContent> {
 
       if (!mounted) return;
 
-      setState(() {
-        _isPreviewPlaying = !_isPreviewPlaying;
-      });
+      setState(() {});
     } catch (e) {
       debugPrint('播放/暂停失败: $e');
 
@@ -215,5 +255,18 @@ class _HomePageContentState extends State<HomePageContent> {
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _audioPlayer.playerStateStream.listen((state) {
+      if (!mounted) return;
+
+      setState(() {
+        _isPreviewPlaying = state.playing;
+      });
+    });
   }
 }
