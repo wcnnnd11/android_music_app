@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 
 class HomeDrawer extends StatelessWidget {
   final VoidCallback onTapAnnouncement;
+  final VoidCallback? onTapDownloadHistory;
 
-  const HomeDrawer({super.key, required this.onTapAnnouncement});
+  const HomeDrawer({
+    super.key,
+    required this.onTapAnnouncement,
+    this.onTapDownloadHistory,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +26,10 @@ class HomeDrawer extends StatelessWidget {
               title: const Text('下载历史'),
               onTap: () {
                 Navigator.pop(context);
+
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  onTapDownloadHistory?.call();
+                });
               },
             ),
 
@@ -46,7 +55,6 @@ class HomeDrawer extends StatelessWidget {
 
             Divider(height: 1, color: isDark ? Colors.white12 : Colors.black12),
 
-            /// 👇 关键改动
             ListTile(
               leading: const Icon(Icons.campaign_outlined),
               title: const Text('查看公告'),

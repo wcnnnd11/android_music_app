@@ -1,5 +1,11 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../controllers/home_controller.dart';
 import '../../controllers/search_controller.dart' as app;
@@ -25,8 +31,12 @@ class HomePageContent extends StatefulWidget {
 }
 
 class _HomePageContentState extends State<HomePageContent> {
+  static const String _downloadHistoryKey = 'download_history';
+  static const int _downloadHistoryLimit = 50;
+
   final app.SearchController _searchController = app.SearchController();
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final Dio _dio = Dio();
 
   Map<String, dynamic>? _currentPreviewSong;
   String? _currentPreviewUrl;
@@ -37,7 +47,6 @@ class _HomePageContentState extends State<HomePageContent> {
     _searchController.search(keyword);
   }
 
-  /// 只收起键盘，不清空搜索结果
   void _unfocusOnly() {
     FocusScope.of(context).unfocus();
   }
@@ -101,20 +110,168 @@ class _HomePageContentState extends State<HomePageContent> {
     Map<String, dynamic> song,
     String quality,
   ) async {
+    final songTitle = song['title']?.toString().trim();
+    final displayTitle = (songTitle != null && songTitle.isNotEmpty)
+        ? songTitle
+        : '未知歌曲';
+
+    final time = DateTime.now();
+    final historyId = time.microsecondsSinceEpoch.toString();
+
+    await _addDownloadHistory(
+      id: historyId,
+      musicName: displayTitle,
+      quality: quality,
+      time: time,
+      result: '下载中',
+    );
+
     final resource = await _searchController.fetchSongResource(
       song,
       quality: quality,
     );
 
     if (!mounted) return;
-    if (resource == null) return;
+
+    if (resource == null) {
+      await _updateDownloadHistoryResult(historyId, '失败');
+      _showSnackBar('获取下载资源失败');
+      return;
+    }
 
     final downloadUrl = resource['url']?.toString();
-    if (downloadUrl == null || downloadUrl.isEmpty) return;
+    if (downloadUrl == null || downloadUrl.isEmpty) {
+      await _updateDownloadHistoryResult(historyId, '失败');
+      _showSnackBar('下载链接为空');
+      return;
+    }
 
-    debugPrint('下载歌曲: ${song['title']} | 音质: $quality | url: $downloadUrl');
+    final artist = song['artist']?.toString().trim();
 
-    // 这里先只打日志，下一步再接真正下载逻辑
+    final safeTitle = _sanitizeFileName(
+      songTitle?.isNotEmpty == true ? songTitle! : 'unknown',
+    );
+    final safeArtist = _sanitizeFileName(
+      artist?.isNotEmpty == true ? artist! : 'unknown',
+    );
+    final safeQuality = _sanitizeFileName(quality);
+
+    final extension = _guessFileExtension(downloadUrl, resource);
+    final fileName = '$safeTitle - $safeArtist [$safeQuality].$extension';
+
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final downloadDir = Directory('${directory.path}/downloads');
+
+      if (!await downloadDir.exists()) {
+        await downloadDir.create(recursive: true);
+      }
+
+      final savePath = '${downloadDir.path}/$fileName';
+
+      if (!mounted) return;
+      _showSnackBar('开始下载：$fileName');
+
+      await _dio.download(
+        downloadUrl,
+        savePath,
+        options: Options(
+          receiveTimeout: const Duration(minutes: 5),
+          sendTimeout: const Duration(minutes: 2),
+        ),
+      );
+
+      await _updateDownloadHistoryResult(historyId, '成功');
+
+      if (!mounted) return;
+      _showSnackBar('下载成功：$fileName');
+      debugPrint('下载完成: $savePath');
+    } catch (e) {
+      await _updateDownloadHistoryResult(historyId, '失败');
+
+      if (!mounted) return;
+      _showSnackBar('下载失败：$e');
+      debugPrint('下载失败: $e');
+    }
+  }
+
+  Future<void> _addDownloadHistory({
+    required String id,
+    required String musicName,
+    required String quality,
+    required DateTime time,
+    required String result,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawList = prefs.getStringList(_downloadHistoryKey) ?? [];
+
+    final item = {
+      'id': id,
+      'musicName': musicName,
+      'quality': quality,
+      'time': _formatHistoryTime(time),
+      'rawTime': time.toIso8601String(),
+      'result': result,
+    };
+
+    rawList.insert(0, jsonEncode(item));
+
+    final trimmedList = rawList.take(_downloadHistoryLimit).toList();
+    await prefs.setStringList(_downloadHistoryKey, trimmedList);
+  }
+
+  Future<void> _updateDownloadHistoryResult(String id, String result) async {
+    final prefs = await SharedPreferences.getInstance();
+    final rawList = prefs.getStringList(_downloadHistoryKey) ?? [];
+
+    final updatedList = rawList.map((item) {
+      final map = jsonDecode(item) as Map<String, dynamic>;
+      if (map['id'] == id) {
+        map['result'] = result;
+      }
+      return jsonEncode(map);
+    }).toList();
+
+    await prefs.setStringList(_downloadHistoryKey, updatedList);
+  }
+
+  String _formatHistoryTime(DateTime time) {
+    final month = time.month.toString().padLeft(2, '0');
+    final day = time.day.toString().padLeft(2, '0');
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$month-$day $hour:$minute';
+  }
+
+  String _sanitizeFileName(String input) {
+    return input.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_').trim();
+  }
+
+  String _guessFileExtension(String url, Map<String, dynamic> resource) {
+    final lowerUrl = url.toLowerCase();
+
+    if (lowerUrl.contains('.flac')) return 'flac';
+    if (lowerUrl.contains('.mp3')) return 'mp3';
+    if (lowerUrl.contains('.m4a')) return 'm4a';
+    if (lowerUrl.contains('.aac')) return 'aac';
+    if (lowerUrl.contains('.wav')) return 'wav';
+
+    final type = resource['type']?.toString().toLowerCase();
+    if (type != null && type.isNotEmpty) {
+      if (type.contains('flac')) return 'flac';
+      if (type.contains('mp3')) return 'mp3';
+      if (type.contains('m4a')) return 'm4a';
+      if (type.contains('aac')) return 'aac';
+      if (type.contains('wav')) return 'wav';
+    }
+
+    return 'mp3';
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _handlePreviewPlayPause() async {
