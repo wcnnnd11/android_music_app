@@ -23,6 +23,11 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
     _controller.addListener(() {
       setState(() {});
     });
+
+    /// 监听焦点变化（用于进入/退出搜索态）
+    _focusNode.addListener(() {
+      setState(() {});
+    });
   }
 
   @override
@@ -40,14 +45,23 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
 
   void _clearSearch() {
     _controller.clear();
-    widget.onSearch?.call(''); // 触发退出搜索态
+    widget.onSearch?.call('');
     FocusScope.of(context).unfocus();
+  }
+
+  void _exitSearch() {
+    _controller.clear();
+    widget.onSearch?.call('');
+    _focusNode.unfocus();
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final hasText = _controller.text.isNotEmpty;
+
+    /// ⭐ 搜索态判断
+    final isSearchMode = _focusNode.hasFocus || hasText;
 
     return GestureDetector(
       onTap: () {
@@ -62,8 +76,17 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
         padding: const EdgeInsets.symmetric(horizontal: 14),
         child: Row(
           children: [
-            Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black45),
+            /// ⭐ 左侧：返回 / 搜索 图标切换
+            GestureDetector(
+              onTap: isSearchMode ? _exitSearch : null,
+              child: Icon(
+                isSearchMode ? Icons.arrow_back : Icons.search,
+                color: isDark ? Colors.white54 : Colors.black45,
+              ),
+            ),
+
             const SizedBox(width: 8),
+
             Expanded(
               child: TextField(
                 controller: _controller,
@@ -87,7 +110,6 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
             ),
 
             /// ===== 右侧动态区域 =====
-            /// ===== 右侧动态区域 =====
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -104,7 +126,7 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
                   const SizedBox(width: 8),
                 ],
 
-                /// 分割线（始终存在）
+                /// 分割线
                 Container(
                   width: 1,
                   height: 20,
@@ -112,7 +134,7 @@ class _HomeSearchBarState extends State<HomeSearchBar> {
                 ),
                 const SizedBox(width: 8),
 
-                /// 搜索按钮（始终存在）
+                /// 搜索按钮
                 GestureDetector(
                   onTap: _submitSearch,
                   child: Text(

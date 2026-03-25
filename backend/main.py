@@ -110,7 +110,7 @@ search_songs_db: List[SearchSong] = [
     SearchSong(
         id="qq_song_1",
         platform="qq",
-        title="夜曲",
+        title="123夜曲",
         artist="周杰伦",
         duration=245,
         quality=["standard", "hq", "sq"]

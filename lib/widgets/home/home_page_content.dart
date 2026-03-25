@@ -37,18 +37,17 @@ class _HomePageContentState extends State<HomePageContent> {
     _searchController.search(keyword);
   }
 
-  void _exitSearch(BuildContext context) {
+  /// 只收起键盘，不清空搜索结果
+  void _unfocusOnly() {
     FocusScope.of(context).unfocus();
-    _searchController.clear();
   }
 
   Future<void> _handleSongTap(Map<String, dynamic> song) async {
     final songId = song['id'];
     _isPreviewPlaying = true;
 
-    debugPrint('点击歌曲: $song');
+    FocusScope.of(context).unfocus();
 
-    // ✅ 如果是当前正在试听的歌曲 → 切换播放/暂停
     if (_currentPreviewSong != null &&
         _currentPreviewSong!['id'] == songId &&
         _currentPreviewUrl != null) {
@@ -56,31 +55,24 @@ class _HomePageContentState extends State<HomePageContent> {
       return;
     }
 
-    final resource = await _searchController.fetchSongResource(song);
+    final resource = await _searchController.fetchSongResource(
+      song,
+      quality: 'standard',
+    );
 
     if (!mounted) return;
 
     if (resource == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('获取试听资源失败')));
       return;
     }
 
     final playUrl = resource['url']?.toString();
 
-    debugPrint('试听资源: $resource');
-    debugPrint('试听链接: $playUrl');
-
     if (playUrl == null || playUrl.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('已拿到资源响应，但没有可播放链接')));
       return;
     }
 
     try {
-      // ✅ 先更新 UI（关键！）
       setState(() {
         _currentPreviewSong = song;
         _currentPreviewUrl = playUrl;
@@ -88,36 +80,11 @@ class _HomePageContentState extends State<HomePageContent> {
         _isPreviewPlaying = true;
       });
 
-      try {
-        await _audioPlayer.stop();
-        await _audioPlayer.setUrl(playUrl);
-        await _audioPlayer.play();
-      } catch (e) {
-        debugPrint('试听播放失败: $e');
-
-        try {
-          await _audioPlayer.stop();
-        } catch (_) {}
-
-        if (!mounted) return;
-
-        setState(() {
-          _currentPreviewSong = null;
-          _currentPreviewUrl = null;
-          _isMiniPlayerVisible = false;
-          _isPreviewPlaying = false;
-        });
-
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('试听播放失败')));
-      }
+      await _audioPlayer.stop();
+      await _audioPlayer.setUrl(playUrl);
+      await _audioPlayer.play();
     } catch (e) {
-      debugPrint('试听播放失败: $e');
-
-      try {
-        await _audioPlayer.stop();
-      } catch (_) {}
+      await _audioPlayer.stop();
 
       if (!mounted) return;
 
@@ -127,11 +94,27 @@ class _HomePageContentState extends State<HomePageContent> {
         _isMiniPlayerVisible = false;
         _isPreviewPlaying = false;
       });
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('试听播放失败')));
     }
+  }
+
+  Future<void> _handleDownloadTap(
+    Map<String, dynamic> song,
+    String quality,
+  ) async {
+    final resource = await _searchController.fetchSongResource(
+      song,
+      quality: quality,
+    );
+
+    if (!mounted) return;
+    if (resource == null) return;
+
+    final downloadUrl = resource['url']?.toString();
+    if (downloadUrl == null || downloadUrl.isEmpty) return;
+
+    debugPrint('下载歌曲: ${song['title']} | 音质: $quality | url: $downloadUrl');
+
+    // 这里先只打日志，下一步再接真正下载逻辑
   }
 
   Future<void> _handlePreviewPlayPause() async {
@@ -147,23 +130,11 @@ class _HomePageContentState extends State<HomePageContent> {
       if (!mounted) return;
 
       setState(() {});
-    } catch (e) {
-      debugPrint('播放/暂停失败: $e');
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('播放控制失败')));
-    }
+    } catch (_) {}
   }
 
   Future<void> _handleCloseMiniPlayer() async {
-    try {
-      await _audioPlayer.stop();
-    } catch (e) {
-      debugPrint('关闭试听失败: $e');
-    }
+    await _audioPlayer.stop();
 
     if (!mounted) return;
 
@@ -172,6 +143,19 @@ class _HomePageContentState extends State<HomePageContent> {
       _currentPreviewUrl = null;
       _isMiniPlayerVisible = false;
       _isPreviewPlaying = false;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _audioPlayer.playerStateStream.listen((state) {
+      if (!mounted) return;
+
+      setState(() {
+        _isPreviewPlaying = state.playing;
+      });
     });
   }
 
@@ -189,7 +173,7 @@ class _HomePageContentState extends State<HomePageContent> {
 
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
-      onTap: () => _exitSearch(context),
+      onTap: _unfocusOnly,
       child: HomeBackground(
         child: SafeArea(
           bottom: false,
@@ -214,6 +198,10 @@ class _HomePageContentState extends State<HomePageContent> {
                               results: _searchController.results,
                               isLoading: _searchController.isSearching,
                               onSongTap: _handleSongTap,
+                              currentPlayingId: _currentPreviewSong?['id']
+                                  ?.toString(),
+                              isPlaying: _isPreviewPlaying,
+                              onQualityTap: _handleDownloadTap,
                             )
                           else ...[
                             if (controller.hasAnyAccount)
@@ -255,18 +243,5 @@ class _HomePageContentState extends State<HomePageContent> {
         ),
       ),
     );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-
-    _audioPlayer.playerStateStream.listen((state) {
-      if (!mounted) return;
-
-      setState(() {
-        _isPreviewPlaying = state.playing;
-      });
-    });
   }
 }
